@@ -1,0 +1,32 @@
+
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg
+*.egg-info/
+
+# Environnements virtuels
+env/
+venv/
+ENV/
+
+# Configuration d'IDE
+.vscode/
+.idea/
+
+# Fichiers système
+.DS_Store
+Thumbs.db
+
+# Fichiers temporaires
+*.log
+*.bak
+*.swp
+
+# Données (optionnel, si on versionne pas)
+*.csv
+*.pkl
+
+# Jetons/API keys (si jamais présents)
+.env
