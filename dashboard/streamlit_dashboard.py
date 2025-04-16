@@ -6,9 +6,12 @@ import matplotlib.pyplot as plt
 st.set_page_config(page_title="Dashboard Crédit", layout="centered")
 st.title("📊 Dashboard - Décision de crédit")
 
+#url_ids = "https://shap-credit-api-mamdou-0a39fd6254f1.herokuapp.com/api/ids"
+
 # 🔁 Récupérer la liste des IDs depuis l'API
 try:
-    id_response = requests.get("http://localhost:5000/api/ids")
+    #id_response = requests.get("http://localhost:5000/api/ids")
+    id_response = requests.get("https://shap-credit-api-mamdou-0a39fd6254f1.herokuapp.com/api/ids")
     id_response.raise_for_status()
     ids = id_response.json().get("ids", [])
     client_id = st.selectbox("Sélectionnez un identifiant client :", ids)
@@ -17,7 +20,8 @@ except Exception as e:
     st.stop()
 
 if st.button("Obtenir la prédiction via API"):
-    url = "http://localhost:5000/api/predict"
+    url = "https://shap-credit-api-mamdou-0a39fd6254f1.herokuapp.com/api/predict"
+    #url = "http://localhost:5000/api/predict"
 
     try:
         response = requests.post(url, json={"id_client": int(client_id)})
