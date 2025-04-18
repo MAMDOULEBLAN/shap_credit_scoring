@@ -2,6 +2,7 @@
 
 [![Streamlit App](https://img.shields.io/badge/Streamlit-Dashboard-green)](https://mamdouleblan-shap-credit-scoring.streamlit.app)
 [![Heroku API](https://img.shields.io/badge/API-Heroku-blue)](https://shap-credit-api-mamdou.herokuapp.com/api/predict)
+[![GitHub Repo](https://img.shields.io/badge/GitHub-Code-black)](https://github.com/MAMDOULEBLAN/shap_credit_scoring)
 
 ## 🔍 Description
 Ce projet a pour objectif de prédire l'acceptation ou le refus d'une demande de crédit à partir de données client. Il comprend :
