@@ -1,5 +1,8 @@
 # Scoring Crédit avec Interprétation SHAP
 
+[![Streamlit App](https://img.shields.io/badge/Streamlit-Dashboard-green)](https://mamdouleblan-shap-credit-scoring.streamlit.app)
+[![Heroku API](https://img.shields.io/badge/API-Heroku-blue)](https://shap-credit-api-mamdou.herokuapp.com/api/predict)
+
 ## 🔍 Description
 Ce projet a pour objectif de prédire l'acceptation ou le refus d'une demande de crédit à partir de données client. Il comprend :
 - Une API Flask pour les prédictions
