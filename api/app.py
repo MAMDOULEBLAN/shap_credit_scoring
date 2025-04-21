@@ -1,3 +1,4 @@
+
 # -*- coding: utf-8 -*-
 from flask import Flask, request, jsonify
 import pandas as pd
@@ -7,7 +8,8 @@ import os
 import shap
 from lightgbm import LGBMClassifier
 
-# Nouvelles localisations de fichiers (data/ et model/ déplacés dans api/)
+os.environ["JOBLIB_MULTIPROCESSING"] = "0"
+
 model_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "model", "best_model.pickle"))
 model = pickle.load(open(model_path, "rb"))
 
@@ -20,7 +22,6 @@ top_features = [
     "DAYS_BIRTH", "DAYS_LAST_PHONE_CHANGE"
 ]
 
-# SHAP explainer instancié une seule fois
 explainer = shap.Explainer(model, df[top_features])
 
 app = Flask(__name__)
@@ -51,6 +52,7 @@ def api_predict():
 
         shap_values = explainer(X_top, check_additivity=False)
         shap_dict = dict(zip(top_features, shap_values.values[0].tolist()))
+        print(shap_values[0])
 
         return jsonify({
             'id_client': ID,
@@ -65,18 +67,11 @@ def api_predict():
         print("🚨 Erreur dans l'API :", str(e))
         return jsonify({'error': str(e)}), 500
 
-# ➕ Nouvelle route GET pour la liste triée des IDs clients
 @app.route('/api/ids', methods=['GET'])
 def get_ids():
     ids = sorted(df['SK_ID_CURR'].tolist())
     return jsonify({'ids': ids})
 
 if __name__ == '__main__':
-    import os
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
-
-
-
-#if __name__ == '__main__':
-    #app.run(debug=True, host="localhost", port=5000)
