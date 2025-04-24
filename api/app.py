@@ -1,61 +1,51 @@
-
 import os
 import pandas as pd
-import pickle
 import shap
+import pickle
 from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
-# Chargement du modèle
-model_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "model", "best_model.pickle"))
-print("Chargement du modèle depuis :", model_path)
+# Chargement du modèle et des données
+model_path = os.path.join("model", "best_model.pickle")
+data_path = os.path.join("data", "sample_full.csv")
+
 model = pickle.load(open(model_path, "rb"))
-print("Modèle chargé avec succès.")
-
-# Chargement des données
-data_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "data", "sample_full.csv"))
-print("Chargement des données depuis :", data_path)
 df = pd.read_csv(data_path)
-print(f"{len(df)} lignes chargées.")
 
-# Initialisation de SHAP
-explainer = shap.TreeExplainer(model)
-features = ['EXT_SOURCE_2', 'DAYS_BIRTH', 'CREDIT_TO_ANNUITY_RATIO', 'EXT_SOURCE_3', 'PAYMENT_RATE']
+@app.route('/api/ids', methods=['GET'])
+def get_ids():
+    ids = sorted(df['SK_ID_CURR'].unique().tolist())
+    return jsonify({"ids": ids})
 
 @app.route('/api/predict', methods=['POST'])
 def predict():
     try:
-        input_data = request.get_json()
-        id_client = input_data.get('id_client')
-        print("Demande de prédiction pour ID client :", id_client)
+        content = request.json
+        client_id = int(content['id'])
+        client_data = df[df['SK_ID_CURR'] == client_id].drop(columns=["SK_ID_CURR"])
 
-        if id_client not in df['SK_ID_CURR'].values:
-            return jsonify({"erreur": "Client non trouvé"}), 404
+        proba = model.predict_proba(client_data)[0][1]
+        prediction = model.predict(client_data)[0]
 
-        X = df[df['SK_ID_CURR'] == id_client][features]
-        proba = model.predict_proba(X)[:, 1][0]
-        prediction = model.predict(X)[0]
-        shap_values = explainer.shap_values(X, check_additivity=False)
+        explainer = shap.Explainer(model)
+        shap_values = explainer(client_data)
+        top_features = sorted(
+            zip(client_data.columns, shap_values.values[0]),
+            key=lambda x: abs(x[1]),
+            reverse=True
+        )[:5]
 
-        result = {
+        top_features_list = [{"feature": f, "shap_value": float(v)} for f, v in top_features]
+
+        return jsonify({
             "prediction": int(prediction),
-            "probabilite": round(proba, 4),
-            "shap_values": {feature: float(shap_values[1][0][i]) for i, feature in enumerate(features)}
-        }
-        return jsonify(result)
+            "proba": round(proba, 4),
+            "shap_values": top_features_list
+        })
     except Exception as e:
-        print("Erreur lors de la prédiction :", str(e))
-        return jsonify({"erreur": str(e)}), 500
-
-@app.route('/api/ids', methods=['GET'])
-def get_ids():
-    try:
-        ids = sorted(df['SK_ID_CURR'].unique().tolist())
-        return jsonify({"ids": ids})
-    except Exception as e:
-        print("Erreur lors de la récupération des IDs :", str(e))
-        return jsonify({"erreur": str(e)}), 500
+        return jsonify({"erreur": str(e)})
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(debug=False, host='0.0.0.0', port=port)
