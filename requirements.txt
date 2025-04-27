@@ -10,7 +10,7 @@ pydantic
 seaborn
 scikit-learn
 streamlit
-uvicorn
+gunicorn
 
 
 
