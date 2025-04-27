@@ -1,80 +1,69 @@
-# Scoring Crédit avec Interprétation SHAP
+# Projet de scoring de crédit – OpenClassrooms
 
-[![Streamlit App](https://img.shields.io/badge/Streamlit-Dashboard-green)](https://mamdouleblan-shap-credit-scoring.streamlit.app)
-[![Heroku API](https://img.shields.io/badge/API-Heroku-blue)](https://shap-credit-api-mamdou.herokuapp.com/api/predict)
-[![GitHub Repo](https://img.shields.io/badge/GitHub-Code-black)](https://github.com/MAMDOULEBLAN/shap_credit_scoring)
+Ce projet a pour objectif de construire un modèle de scoring de crédit permettant à une entreprise comme "Prêt à dépenser" de prédire si un client est éligible à un prêt.
 
-## 🔍 Description
-Ce projet a pour objectif de prédire l'acceptation ou le refus d'une demande de crédit à partir de données client. Il comprend :
-- Une API Flask pour les prédictions
-- Un dashboard Streamlit interactif
-- Une interprétation des résultats à l'aide de SHAP
+## 🚀 Fonctionnalités
 
-## 🗂️ Structure du projet
-```
-shap_credit_project/
-├── api/                  # Code de l'API Flask (app.py, model, data...)
-├── dashboard/            # Dashboard Streamlit (streamlit_dashboard.py)
-├── requirements.txt      # Librairies requises
-```
+- 🔍 Prédiction de probabilité de défaut
+- 📊 Dashboard interactif (Streamlit)
+- 🧠 Interprétabilité avec SHAP
+- 🔗 API Flask connectée au dashboard
+- 📁 Projet organisé en modules : `api/`, `dashboard/`, `data/`, `model/`
 
-## ⚙️ Exécution en local
+## 🛠️ Lancer le projet en local
 
-### 1. Cloner le projet
+### 1. Se placer dans le dossier racine
 ```bash
-git clone https://github.com/MAMDOULEBLAN/shap_credit_scoring.git
-cd shap_credit_scoring
+cd shap_credit_project_final
 ```
 
-### 2. Créer un environnement et installer les dépendances
+### 2. Créer et activer l'environnement (facultatif si conda utilisé)
 ```bash
-python -m venv venv
-venv\Scripts\activate
+conda create -n shap_test python=3.10
+conda activate shap_test
+```
+
+### 3. Installer les dépendances
+```bash
 pip install -r requirements.txt
 ```
 
-### 3. Lancer l'API Flask
+### 4. Lancer l'API
 ```bash
-cd api
-python app.py
+python api/app.py
 ```
-L'API tourne sur `http://127.0.0.1:5000`
 
-### 4. Lancer le dashboard Streamlit
+### 5. Lancer le dashboard
 ```bash
-cd ..
 streamlit run dashboard/streamlit_dashboard.py
 ```
-Le dashboard est accessible sur `http://localhost:8501`
 
-## ☁️ Déploiement Web
+## 🔑 Tester un identifiant client
 
-### API en ligne (Heroku)
+Exemples valides :
 ```
-https://shap-credit-api-mamdou.herokuapp.com/api/predict
-```
-
-### Dashboard en ligne (Streamlit Cloud)
-```
-https://mamdouleblan-shap-credit-scoring.streamlit.app
+100001, 100005, 100021
 ```
 
-## 🔌 Fonctionnement de l'API
+## 📦 Arborescence du projet
 
-### ✉️ POST /api/predict
-- Envoie un identifiant client
-- Reçoit : la prédiction (accepté/refusé), la probabilité et les valeurs SHAP
-
-### 🔢 GET /api/ids
-- Retourne la liste triée des identifiants clients disponibles
-
-## 📊 Fonctionnement du dashboard
-- Sélection d'un ID client (dropdown)
-- Récupération de la prédiction via l'API Heroku
-- Affichage de la probabilité de défaut
-- Affichage des 5 variables principales influençant la décision (SHAP)
+```
+shap_credit_project_final/
+│
+├── api/
+│   ├── app.py
+│   ├── model/
+│   │   └── best_model.pickle
+│   └── data/
+│       └── sample_full.csv
+│
+├── dashboard/
+│   └── streamlit_dashboard.py
+│
+├── requirements.txt
+└── README.md
+```
 
 ## 👤 Auteur
-**Mamadou LEBLAN**
 
-Projet réalisé dans le cadre de la formation Data Scientist OpenClassrooms 🎓
+Projet réalisé dans le cadre de la formation **Data Scientist – OpenClassrooms**
