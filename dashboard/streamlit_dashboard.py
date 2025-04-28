@@ -40,10 +40,12 @@ if st.button("Obtenir la prédiction via API"):
 
             st.metric(label="Probabilité de défaut", value=f"{proba*100:.2f} %")
 
-            st.subheader("🧒 Comparaison client vs moyenne (5 variables clés)")
+            st.subheader("🧒 Comparaison client vs moyenne (10 variables clés)")
+            selected_features = list(result["shap_values"].keys())
+
             df_compare = pd.DataFrame({
-                "Valeur client": result["features"],
-                "Moyenne globale": result["global_means"]
+                "Valeur client": {feat: result["features"][feat] for feat in selected_features},
+                "Moyenne globale": {feat: result["global_means"][feat] for feat in selected_features}
             })
             st.dataframe(df_compare)
 
