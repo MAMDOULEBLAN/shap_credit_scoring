@@ -1,15 +1,18 @@
 from flask import Flask, request, jsonify
+import pandas as pd
 import joblib
 import shap
-import pandas as pd
 
 app = Flask(__name__)
 
 # Charger le modèle et les données
-model = joblib.load("model/model.pkl")
-data = pd.read_csv("data/data.csv")
+model = joblib.load("model/best_model.pickle")
+data = pd.read_csv("data/sample_full.csv")
 
-# Créer l'explainer SHAP (TreeExplainer pour LightGBM)
+# Garder toutes les colonnes sauf SK_ID_CURR pour l'analyse
+feature_columns = [col for col in data.columns if col != "SK_ID_CURR"]
+
+# Créer l'explainer SHAP sur toutes les features
 explainer = shap.TreeExplainer(model)
 
 @app.route("/api/ids", methods=["GET"])
@@ -25,40 +28,40 @@ def predict():
     if client_id not in data["SK_ID_CURR"].values:
         return jsonify({"error": "Identifiant client introuvable"}), 404
 
-    # Extraire les features du client
-    X_top = data[data["SK_ID_CURR"] == client_id].drop(columns=["SK_ID_CURR"])
+    # Extraire les données du client
+    X_client = data[data["SK_ID_CURR"] == client_id][feature_columns]
 
-    # Faire la prédiction
-    probability = model.predict_proba(X_top)[:, 1][0]
-    prediction = int(probability >= 0.5)
+    # Prédiction
+    proba = model.predict_proba(X_client)[:, 1][0]
+    prediction = int(proba >= 0.5)
 
-    # Calculer les valeurs SHAP
-    shap_values = explainer(X_top)
+    # SHAP values pour ce client
+    shap_values = explainer.shap_values(X_client)
 
-    # Récupérer les SHAP values du client
-    client_shap = shap_values.values[0]
+    # Récupérer les SHAP values pour ce client (1er élément)
+    client_shap = shap_values[0]
 
-    # Construire un DataFrame pour trier les SHAP values
+    # Créer DataFrame pour trier
     shap_df = pd.DataFrame({
-        'feature': X_top.columns,
+        'feature': feature_columns,
         'shap_value': client_shap
     })
 
-    # Trier par impact absolu
+    # Trier par valeur absolue décroissante
     shap_df_sorted = shap_df.reindex(shap_df['shap_value'].abs().sort_values(ascending=False).index)
 
-    # Prendre les 10 variables les plus impactantes
-    shap_df_top = shap_df_sorted.head(10)
+    # Garder les 10 features les plus impactantes
+    shap_df_top10 = shap_df_sorted.head(10)
 
-    # Créer un dictionnaire {feature: shap_value}
-    shap_dict = dict(zip(shap_df_top['feature'], shap_df_top['shap_value']))
+    # Créer le dictionnaire {feature: shap_value}
+    shap_dict = dict(zip(shap_df_top10['feature'], shap_df_top10['shap_value']))
 
-    # Renvoyer la réponse
+    # Répondre
     return jsonify({
         "prediction": prediction,
-        "probability": probability,
-        "features": X_top.iloc[0].to_dict(),
-        "global_means": data.drop(columns=["SK_ID_CURR"]).mean().to_dict(),
+        "probability": proba,
+        "features": X_client.iloc[0].to_dict(),
+        "global_means": data[feature_columns].mean().to_dict(),
         "shap_values": shap_dict
     })
 
