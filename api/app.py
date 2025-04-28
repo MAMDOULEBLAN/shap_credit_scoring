@@ -5,9 +5,17 @@ import shap
 
 app = Flask(__name__)
 
+# Charger le modèle
+model_path = os.path.join(os.getcwd(), "model", "best_model.pickle")
+model = joblib.load(model_path)
+
+# Charger les données
+data_path = os.path.join(os.getcwd(), "data", "sample_full.csv")
+data = pd.read_csv(data_path)
+
 # Charger le modèle et les données
-model = joblib.load("model/best_model.pickle")
-data = pd.read_csv("data/sample_full.csv")
+#model = joblib.load("model/best_model.pickle")
+#data = pd.read_csv("data/sample_full.csv")
 
 # Garder toutes les colonnes sauf SK_ID_CURR pour l'analyse
 feature_columns = [col for col in data.columns if col != "SK_ID_CURR"]
