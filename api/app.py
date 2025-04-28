@@ -1,83 +1,66 @@
-# -*- coding: utf-8 -*-
 from flask import Flask, request, jsonify
-import pandas as pd
-import numpy as np
-import pickle
-import os
+import joblib
 import shap
-from lightgbm import LGBMClassifier
-
-# Nouvelles localisations de fichiers (data/ et model/ déplacés dans api/)
-model_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "model", "best_model.pickle"))
-model = pickle.load(open(model_path, "rb"))
-
-data_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "data", "sample_full.csv"))
-df = pd.read_csv(data_path)
-df['SK_ID_CURR'] = df['SK_ID_CURR'].astype(int)
-
-top_features = [
-    "EXT_SOURCE_3", "EXT_SOURCE_2", "CREDIT_TO_ANNUITY_RATIO",
-    "DAYS_BIRTH", "DAYS_LAST_PHONE_CHANGE"
-]
-
-# SHAP explainer instancié une seule fois
-explainer = shap.Explainer(model, df[top_features])
+import pandas as pd
 
 app = Flask(__name__)
 
-@app.route('/api/predict', methods=['POST'])
-def api_predict():
-    try:
-        data = request.get_json()
-        print("🔍 Données reçues :", data)
+# Charger le modèle et les données
+model = joblib.load("model/model.pkl")
+data = pd.read_csv("data/data.csv")
 
-        if not data or "id_client" not in data:
-            return jsonify({'error': "ID client manquant"}), 400
+# Créer l'explainer SHAP (TreeExplainer pour LightGBM)
+explainer = shap.TreeExplainer(model)
 
-        ID = int(data["id_client"])
-
-        if ID not in df['SK_ID_CURR'].values:
-            return jsonify({'error': "Client non trouvé"}), 404
-
-        client_row = df[df['SK_ID_CURR'] == ID]
-        X = client_row.drop(['SK_ID_CURR'], axis=1)
-        X_top = client_row[top_features]
-
-        prediction = model.predict(X)[0]
-        proba = model.predict_proba(X)[:, 1][0]
-
-        client_data = X_top.iloc[0].to_dict()
-        global_means = df[top_features].mean().round(4).to_dict()
-
-        shap_values = explainer(X_top, check_additivity=False)
-        shap_dict = dict(zip(top_features, shap_values.values[0].tolist()))
-        print(shap_values[0])
-
-        return jsonify({
-            'id_client': ID,
-            'prediction': int(prediction),
-            'probability': round(proba, 4),
-            'features': client_data,
-            'global_means': global_means,
-            'shap_values': shap_dict
-        })
-
-    except Exception as e:
-        print("🚨 Erreur dans l'API :", str(e))
-        return jsonify({'error': str(e)}), 500
-
-# ➕ Nouvelle route GET pour la liste triée des IDs clients
-@app.route('/api/ids', methods=['GET'])
+@app.route("/api/ids", methods=["GET"])
 def get_ids():
-    ids = sorted(df['SK_ID_CURR'].tolist())
-    return jsonify({'ids': ids})
+    ids = data["SK_ID_CURR"].tolist()
+    return jsonify({"ids": ids})
 
-if __name__ == '__main__':
-    import os
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
+@app.route("/api/predict", methods=["POST"])
+def predict():
+    input_data = request.get_json()
+    client_id = input_data.get("id_client")
 
+    if client_id not in data["SK_ID_CURR"].values:
+        return jsonify({"error": "Identifiant client introuvable"}), 404
 
+    # Extraire les features du client
+    X_top = data[data["SK_ID_CURR"] == client_id].drop(columns=["SK_ID_CURR"])
 
-#if __name__ == '__main__':
-    #app.run(debug=True, host="localhost", port=5000)
+    # Faire la prédiction
+    probability = model.predict_proba(X_top)[:, 1][0]
+    prediction = int(probability >= 0.5)
+
+    # Calculer les valeurs SHAP
+    shap_values = explainer(X_top)
+
+    # Récupérer les SHAP values du client
+    client_shap = shap_values.values[0]
+
+    # Construire un DataFrame pour trier les SHAP values
+    shap_df = pd.DataFrame({
+        'feature': X_top.columns,
+        'shap_value': client_shap
+    })
+
+    # Trier par impact absolu
+    shap_df_sorted = shap_df.reindex(shap_df['shap_value'].abs().sort_values(ascending=False).index)
+
+    # Prendre les 10 variables les plus impactantes
+    shap_df_top = shap_df_sorted.head(10)
+
+    # Créer un dictionnaire {feature: shap_value}
+    shap_dict = dict(zip(shap_df_top['feature'], shap_df_top['shap_value']))
+
+    # Renvoyer la réponse
+    return jsonify({
+        "prediction": prediction,
+        "probability": probability,
+        "features": X_top.iloc[0].to_dict(),
+        "global_means": data.drop(columns=["SK_ID_CURR"]).mean().to_dict(),
+        "shap_values": shap_dict
+    })
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000, debug=True)
