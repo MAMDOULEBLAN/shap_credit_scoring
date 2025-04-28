@@ -26,7 +26,7 @@ Thumbs.db
 
 # Données (optionnel, si on versionne pas)
 *.csv
-*.pkl
+#*.pkl
 
 # Jetons/API keys (si jamais présents)
 .env
