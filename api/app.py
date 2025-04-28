@@ -1,69 +1,80 @@
-from flask import Flask, request, jsonify
+import streamlit as st
+import requests
 import pandas as pd
-import joblib
-import shap
+import matplotlib.pyplot as plt
 
-app = Flask(__name__)
+# Configuration de la page
+st.set_page_config(page_title="Dashboard Crédit", layout="centered")
+st.title("📊 Dashboard - Décision de crédit")
 
-# Charger le modèle et les données
-model = joblib.load("model/best_model.pickle")
-data = pd.read_csv("data/sample_full.csv")
+# Choisir l'environnement
+env = st.sidebar.selectbox("Sélectionner l'environnement :", ["Local", "Cloud"])
 
-# Garder toutes les colonnes sauf SK_ID_CURR pour l'analyse
-feature_columns = [col for col in data.columns if col != "SK_ID_CURR"]
+if env == "Local":
+    API_URL = "http://localhost:5000"
+else:
+    API_URL = "https://shap-credit-api-mamdou-0a39fd6254f1.herokuapp.com"
 
-# Créer l'explainer SHAP sur toutes les features
-explainer = shap.TreeExplainer(model)
+# 🔁 Récupérer la liste des IDs depuis l'API
+try:
+    id_response = requests.get(f"{API_URL}/api/ids")
+    id_response.raise_for_status()
+    ids = id_response.json().get("ids", [])
+    client_id = st.selectbox("Sélectionnez un identifiant client :", ids)
+except Exception as e:
+    st.error(f"Erreur lors de la récupération des IDs : {e}")
+    st.stop()
 
-@app.route("/api/ids", methods=["GET"])
-def get_ids():
-    ids = data["SK_ID_CURR"].tolist()
-    return jsonify({"ids": ids})
+if st.button("Obtenir la prédiction via API"):
+    try:
+        response = requests.post(f"{API_URL}/api/predict", json={"id_client": int(client_id)})
+        if response.status_code == 200:
+            result = response.json()
+            prediction = result["prediction"]
+            proba = result["probability"]
 
-@app.route("/api/predict", methods=["POST"])
-def predict():
-    input_data = request.get_json()
-    client_id = input_data.get("id_client")
+            if prediction == 1:
+                st.error("❌ Prêt NON accordé")
+            else:
+                st.success("✅ Prêt accordé")
 
-    if client_id not in data["SK_ID_CURR"].values:
-        return jsonify({"error": "Identifiant client introuvable"}), 404
+            st.metric(label="Probabilité de défaut", value=f"{proba*100:.2f} %")
 
-    # Extraire les données du client
-    X_client = data[data["SK_ID_CURR"] == client_id][feature_columns]
+            st.subheader("🧒 Comparaison client vs moyenne (10 variables clés)")
+            selected_features = list(result["shap_values"].keys())
 
-    # Prédiction
-    proba = model.predict_proba(X_client)[:, 1][0]
-    prediction = int(proba >= 0.5)
+            df_compare = pd.DataFrame({
+                "Valeur client": {feat: result["features"][feat] for feat in selected_features},
+                "Moyenne globale": {feat: result["global_means"][feat] for feat in selected_features}
+            })
+            st.dataframe(df_compare)
 
-    # SHAP values pour ce client
-    shap_values = explainer.shap_values(X_client)
+            st.subheader("📉 Visualisation comparative")
+            fig, ax = plt.subplots(figsize=(8, 4))
+            df_compare.plot(kind="bar", ax=ax)
+            plt.xticks(rotation=45, ha="right")
+            plt.tight_layout()
+            st.pyplot(fig)
 
-    # Récupérer les SHAP values pour ce client (1er élément)
-    client_shap = shap_values[0]
+            st.subheader("🔍 Top 10 variables impactant la prédiction")
+            shap_df = pd.DataFrame.from_dict(result["shap_values"], orient="index", columns=["SHAP value"])
 
-    # Créer DataFrame pour trier
-    shap_df = pd.DataFrame({
-        'feature': feature_columns,
-        'shap_value': client_shap
-    })
+            # Trier par valeur absolue décroissante et prendre les 10 premiers
+            shap_df = shap_df.reindex(shap_df["SHAP value"].abs().sort_values(ascending=False).index)
+            shap_df_top10 = shap_df.head(10)
 
-    # Trier par valeur absolue décroissante
-    shap_df_sorted = shap_df.reindex(shap_df['shap_value'].abs().sort_values(ascending=False).index)
+            # Ajouter une petite valeur epsilon pour éviter que des SHAP nuls cachent le graphique
+            epsilon = 1e-6
+            shap_df_top10["SHAP value"] = shap_df_top10["SHAP value"].apply(lambda x: x if abs(x) > epsilon else epsilon)
 
-    # Garder les 10 features les plus impactantes
-    shap_df_top10 = shap_df_sorted.head(10)
+            fig2, ax2 = plt.subplots()
+            shap_df_top10.plot(kind="barh", legend=False, ax=ax2, color="skyblue")
+            ax2.set_title("Top 10 variables impactant la prédiction")
+            plt.tight_layout()
+            st.pyplot(fig2)
 
-    # Créer le dictionnaire {feature: shap_value}
-    shap_dict = dict(zip(shap_df_top10['feature'], shap_df_top10['shap_value']))
-
-    # Répondre
-    return jsonify({
-        "prediction": prediction,
-        "probability": proba,
-        "features": X_client.iloc[0].to_dict(),
-        "global_means": data[feature_columns].mean().to_dict(),
-        "shap_values": shap_dict
-    })
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+        else:
+            st.warning(f"Erreur API : {response.status_code}")
+            st.write(response.json())
+    except Exception as e:
+        st.error(f"Erreur lors de la connexion à l'API : {e}")
