@@ -3,6 +3,8 @@ import pandas as pd
 import shap
 import pickle
 import os
+import shap
+from lightgbm import LGBMClassifier
 
 app = Flask(__name__)
 
@@ -19,12 +21,12 @@ feature_columns = [col for col in data.columns if col != "SK_ID_CURR"]
 # Créer l'explainer SHAP
 explainer = shap.TreeExplainer(model)
 
-@app.route("/api/ids", methods=["GET"])
+@app.route("./api/ids", methods=["GET"])
 def get_ids():
     ids = data["SK_ID_CURR"].tolist()
     return jsonify({"ids": ids})
 
-@app.route("/api/predict", methods=["POST"])
+@app.route("./api/predict", methods=["POST"])
 def predict():
     input_data = request.get_json()
     client_id = input_data.get("id_client")
