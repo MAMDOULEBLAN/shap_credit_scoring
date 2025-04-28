@@ -1,26 +1,22 @@
 from flask import Flask, request, jsonify
 import pandas as pd
-import numpy as np
+import shap
 import pickle
 import os
-import joblib
-import shap
-from lightgbm import LGBMClassifier
-
 
 app = Flask(__name__)
 
-# Charger le modèle et les données avec des chemins compatibles Heroku
-model_path = os.path.join(os.getcwd(), "model", "best_model.pickle")
-model = joblib.load(model_path)
+# Charger le modèle et les données avec chemins absolus compatibles Heroku
+model_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'model', 'best_model.pickle'))
+model = pickle.load(open(model_path, "rb"))
 
-data_path = os.path.join(os.getcwd(), "data", "sample_full.csv")
+data_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data', 'sample_full.csv'))
 data = pd.read_csv(data_path)
 
-# Garder toutes les colonnes sauf SK_ID_CURR pour l'analyse
+# Garder toutes les colonnes sauf SK_ID_CURR
 feature_columns = [col for col in data.columns if col != "SK_ID_CURR"]
 
-# Créer l'explainer SHAP sur toutes les features
+# Créer l'explainer SHAP
 explainer = shap.TreeExplainer(model)
 
 @app.route("/api/ids", methods=["GET"])
@@ -43,28 +39,24 @@ def predict():
     proba = model.predict_proba(X_client)[:, 1][0]
     prediction = int(proba >= 0.5)
 
-    # SHAP values pour ce client
+    # Calculer les SHAP values pour ce client
     shap_values = explainer.shap_values(X_client)
-
-    # Récupérer les SHAP values pour ce client (1er élément)
     client_shap = shap_values[0]
 
-    # Créer DataFrame pour trier
+    # Construire un DataFrame pour trier les variables impactantes
     shap_df = pd.DataFrame({
         'feature': feature_columns,
         'shap_value': client_shap
     })
-
-    # Trier par valeur absolue décroissante
     shap_df_sorted = shap_df.reindex(shap_df['shap_value'].abs().sort_values(ascending=False).index)
 
-    # Garder les 10 features les plus impactantes
+    # Prendre les 10 plus importantes
     shap_df_top10 = shap_df_sorted.head(10)
 
-    # Créer le dictionnaire {feature: shap_value}
+    # Créer un dictionnaire {feature: shap_value}
     shap_dict = dict(zip(shap_df_top10['feature'], shap_df_top10['shap_value']))
 
-    # Répondre
+    # Retourner la réponse
     return jsonify({
         "prediction": prediction,
         "probability": proba,
