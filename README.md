@@ -1,69 +1,45 @@
-# Projet de scoring de crédit – OpenClassrooms
+# Scoring Crédit avec Interprétation SHAP
 
-Ce projet a pour objectif de construire un modèle de scoring de crédit permettant à une entreprise comme "Prêt à dépenser" de prédire si un client est éligible à un prêt.
+[![Streamlit](https://img.shields.io/badge/Streamlit-Dashboard-brightgreen)](https://TON-LIEN-STREAMLIT)
+[![API](https://img.shields.io/badge/API-Heroku-blue)](https://shap-credit-api-mamdou-0a39fd6254f1.herokuapp.com/api/predict)
 
-## 🚀 Fonctionnalités
+## 🔍 Description
 
-- 🔍 Prédiction de probabilité de défaut
-- 📊 Dashboard interactif (Streamlit)
-- 🧠 Interprétabilité avec SHAP
-- 🔗 API Flask connectée au dashboard
-- 📁 Projet organisé en modules : `api/`, `dashboard/`, `data/`, `model/`
+Ce projet a pour objectif de prédire l’acceptation ou le refus d’une demande de crédit.  
+Il comprend :
 
-## 🛠️ Lancer le projet en local
+- ✅ Un **modèle de scoring** basé sur LightGBM
+- 🌐 Une **API Flask** déployée sur Heroku pour les prédictions
+- 📊 Un **dashboard Streamlit** pour visualiser les résultats et l’explication des décisions
+- 📌 Une **interprétation des décisions avec SHAP** pour assurer la transparence
 
-### 1. Se placer dans le dossier racine
-```bash
-cd shap_credit_project_final
-```
+## 📦 Fonctionnalités
 
-### 2. Créer et activer l'environnement (facultatif si conda utilisé)
-```bash
-conda create -n shap_test python=3.10
-conda activate shap_test
-```
+- Affichage du score client
+- Visualisation des variables influentes (SHAP)
+- Comparaison des données client à la moyenne de la population
+- Requête dynamique à l’API pour obtenir les résultats
 
-### 3. Installer les dépendances
-```bash
-pip install -r requirements.txt
-```
+## 🚀 Liens utiles
 
-### 4. Lancer l'API
-```bash
-python api/app.py
-```
+- **Dashboard Streamlit** : [Accéder au dashboard](https://TON-LIEN-STREAMLIT)
+- **API Flask (POST)** : [`/api/predict`](https://shap-credit-api-mamdou-0a39fd6254f1.herokuapp.com/api/predict)
+- **API Flask (GET)** : [`/api/ids`](https://shap-credit-api-mamdou-0a39fd6254f1.herokuapp.com/api/ids)
 
-### 5. Lancer le dashboard
-```bash
-streamlit run dashboard/streamlit_dashboard.py
-```
-
-## 🔑 Tester un identifiant client
-
-Exemples valides :
-```
-100001, 100005, 100021
-```
-
-## 📦 Arborescence du projet
+## 🗂️ Organisation du projet
 
 ```
-shap_credit_project_final/
+shap_credit_project/
 │
 ├── api/
-│   ├── app.py
-│   ├── model/
-│   │   └── best_model.pickle
-│   └── data/
-│       └── sample_full.csv
+│   ├── app.py              # Code de l’API Flask
+│   ├── data/               # Données CSV nécessaires
+│   └── model/              # Fichier du modèle entraîné (.pkl)
 │
 ├── dashboard/
-│   └── streamlit_dashboard.py
+│   └── streamlit_dashboard.py  # Dashboard interactif
 │
-├── requirements.txt
-└── README.md
+├── requirements.txt        # Dépendances du projet
+├── Procfile                # Commande de lancement pour Heroku
+└── README.md               # Ce fichier
 ```
-
-## 👤 Auteur
-
-Projet réalisé dans le cadre de la formation **Data Scientist – OpenClassrooms**
