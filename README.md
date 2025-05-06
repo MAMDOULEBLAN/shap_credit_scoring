@@ -1,6 +1,6 @@
 # Scoring Crédit avec Interprétation SHAP
 
-[![Streamlit](https://img.shields.io/badge/Streamlit-Dashboard-brightgreen)](https://TON-LIEN-STREAMLIT)
+[![Streamlit](https://img.shields.io/badge/Streamlit-Dashboard-brightgreen)](https://shap-credit-api-mamdou-0a39fd6254f1.herokuapp.com/api/ids)
 [![API](https://img.shields.io/badge/API-Heroku-blue)](https://shap-credit-api-mamdou-0a39fd6254f1.herokuapp.com/api/predict)
 
 ## 🔍 Description
@@ -22,7 +22,7 @@ Il comprend :
 
 ## 🚀 Liens utiles
 
-- **Dashboard Streamlit** : [Accéder au dashboard](https://TON-LIEN-STREAMLIT)
+- **Dashboard Streamlit** : [Accéder au dashboard](https://shap-credit-api-mamdou-0a39fd6254f1.herokuapp.com/api/ids)
 - **API Flask (POST)** : [`/api/predict`](https://shap-credit-api-mamdou-0a39fd6254f1.herokuapp.com/api/predict)
 - **API Flask (GET)** : [`/api/ids`](https://shap-credit-api-mamdou-0a39fd6254f1.herokuapp.com/api/ids)
 
